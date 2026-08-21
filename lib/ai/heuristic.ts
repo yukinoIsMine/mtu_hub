@@ -1,17 +1,21 @@
-import type { Comment, Post } from './types'
+import type { AiSummary, SummaryInput } from './types'
+import type { Comment } from '@/lib/types'
 
-export interface AiSummary {
-  tldr: string
-  keyPoints: string[]
-  consensus: string
-  sentiment: 'Positive' | 'Mixed' | 'Constructive' | 'Enthusiastic'
-}
+/**
+ * Rule-based summary. No model involved.
+ *
+ * This was the original `summarizeTopic` in lib/ai-summary.ts, which the UI
+ * presented as AI. It now serves as the fallback for when no API key is
+ * configured, the caller is anonymous, or the model call fails — and the card
+ * labels it honestly when it is used.
+ */
 
 function firstSentences(text: string, count: number): string {
   const parts = text
     .replace(/\s+/g, ' ')
     .split(/(?<=[.!?])\s/)
     .filter(Boolean)
+
   return parts.slice(0, count).join(' ')
 }
 
@@ -19,25 +23,20 @@ function topComments(comments: Comment[], count: number): Comment[] {
   return [...comments].sort((a, b) => b.score - a.score).slice(0, count)
 }
 
-/**
- * Simulated AI summarization. In a production build this would call an LLM,
- * but for the prototype we synthesize a structured summary from the post
- * content and its highest-signal comments so it feels responsive and grounded.
- */
-export function summarizeTopic(post: Post, comments: Comment[]): AiSummary {
+export function heuristicSummary({ post, comments }: SummaryInput): AiSummary {
   const relevant = comments.filter((c) => c.postId === post.id)
   const tops = topComments(relevant, 3)
 
   const tldr = firstSentences(post.body, 2) || post.title
 
-  const keyPoints: string[] = []
-  keyPoints.push(`Original post: ${firstSentences(post.title, 1)}`)
-  tops.forEach((c) => {
+  const keyPoints = [`Original post: ${firstSentences(post.title, 1)}`]
+  for (const c of tops) {
     keyPoints.push(`${c.author} (${c.score} pts): ${firstSentences(c.body, 1)}`)
-  })
+  }
 
-  let sentiment: AiSummary['sentiment'] = 'Constructive'
-  const flair = (post.flair || '').toLowerCase()
+  let sentiment: AiSummary['sentiment']
+  const flair = (post.flair ?? '').toLowerCase()
+
   if (flair.includes('event') || flair.includes('project')) {
     sentiment = 'Enthusiastic'
   } else if (flair.includes('help')) {

@@ -9,7 +9,12 @@ __v0_jsx-dev-runtime.ts
 # Environment variables
 .env*.local
 
+# Supabase CLI local state — machine-specific, and carries your org identifiers
+supabase/.temp/
+supabase/.branches/
+
 # Common ignores
 node_modules
 .next/
 .DS_Store
+tsconfig.tsbuildinfo

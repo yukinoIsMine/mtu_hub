@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import {
   ArrowLeft,
   CalendarDays,
@@ -9,45 +10,43 @@ import {
   Users,
 } from 'lucide-react'
 
+import { useInteractions } from '@/components/interactions-provider'
+
 import { Badge } from '@/components/ui/badge'
 import { CommunityAvatar } from '@/components/community-avatar'
-import { formatCount, formatDate } from '@/lib/format'
+import { accentClass } from '@/lib/accent'
+import { communityLabel, formatCount, formatDate, userLabel } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Community } from '@/lib/types'
 
 interface CommunityDetailProps {
   community: Community
-  subscribed: boolean
   postCount: number
-  onToggleSubscribe: () => void
-  onBack: () => void
-  sortBar: React.ReactNode
-  postsSlot: React.ReactNode
+  /** The sort bar and post list, rendered by the server page. */
+  children: React.ReactNode
 }
 
 export function CommunityDetail({
   community,
-  subscribed,
   postCount,
-  onToggleSubscribe,
-  onBack,
-  sortBar,
-  postsSlot,
+  children,
 }: CommunityDetailProps) {
+  const { canInteract, isSubscribed, toggleSubscribe } = useInteractions()
+  const subscribed = isSubscribed(community.id)
+
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        onClick={onBack}
+      <Link
+        href="/"
         className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
         Back to feed
-      </button>
+      </Link>
 
       {/* Cover header */}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className={cn('h-20 w-full', community.colorClass)} aria-hidden />
+        <div className={cn('h-20 w-full', accentClass(community.accent))} aria-hidden />
         <div className="flex flex-wrap items-end gap-3 px-4 pb-4">
           <div className="-mt-8">
             <CommunityAvatar
@@ -59,13 +58,18 @@ export function CommunityDetail({
             <h1 className="font-heading text-xl font-bold text-foreground">
               {community.name}
             </h1>
-            <p className="text-sm text-muted-foreground">{community.slug}</p>
+            <p className="text-sm text-muted-foreground">
+              {communityLabel(community.slug)}
+            </p>
           </div>
           <button
             type="button"
-            onClick={onToggleSubscribe}
+            onClick={() => toggleSubscribe(community.id)}
+            disabled={!canInteract}
+            title={canInteract ? undefined : 'Sign in to join communities'}
             className={cn(
               'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
+              !canInteract && 'cursor-not-allowed opacity-50',
               subscribed
                 ? 'border border-primary bg-primary/10 text-primary hover:bg-primary/20'
                 : 'bg-primary text-primary-foreground hover:opacity-90',
@@ -145,7 +149,7 @@ export function CommunityDetail({
               <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
                 {community.moderators.map((mod) => (
                   <li key={mod} className="font-medium text-primary">
-                    {mod}
+                    {userLabel(mod)}
                   </li>
                 ))}
               </ul>
@@ -176,11 +180,10 @@ export function CommunityDetail({
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-heading text-base font-bold text-foreground">
-            Posts in {community.slug}
+            Posts in {communityLabel(community.slug)}
           </h2>
         </div>
-        {sortBar}
-        {postsSlot}
+        {children}
       </div>
     </div>
   )

@@ -1,68 +1,84 @@
 'use client'
 
-import { GraduationCap, Search } from 'lucide-react'
+import Link from 'next/link'
+import { GraduationCap, LogOut } from 'lucide-react'
 
+import { signOut } from '@/app/auth/actions'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { CreatePostDialog } from '@/components/create-post-dialog'
-import { initials } from '@/lib/format'
+import { MobileNav } from '@/components/mobile-nav'
+import { SearchBox } from '@/components/search-box'
+import { useInteractions } from '@/components/interactions-provider'
+import { initials, userLabel } from '@/lib/format'
 import type { Community } from '@/lib/types'
 
-interface SiteHeaderProps {
-  query: string
-  onQueryChange: (q: string) => void
-  communities: Community[]
-  currentUser: string
-  onCreate: (data: {
-    communityId: string
-    title: string
-    body: string
-    flair: string
-  }) => void
-  onHome: () => void
-}
+export function SiteHeader({ communities }: { communities: Community[] }) {
+  const { currentUser, createPost } = useInteractions()
 
-export function SiteHeader({
-  query,
-  onQueryChange,
-  communities,
-  currentUser,
-  onCreate,
-  onHome,
-}: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-        <button
-          type="button"
-          onClick={onHome}
-          className="flex shrink-0 items-center gap-2"
-        >
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-3">
+        <MobileNav communities={communities} />
+
+        <Link href="/" className="flex shrink-0 items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <GraduationCap className="size-5" />
           </span>
           <span className="hidden font-heading text-lg font-bold text-foreground sm:block">
             MTU<span className="text-primary">Hub</span>
           </span>
-        </button>
+        </Link>
 
-        <div className="relative mx-auto w-full max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search MTU Hub"
-            className="h-9 w-full rounded-full border border-input bg-secondary/60 pl-9 pr-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-3 focus-visible:ring-ring/40"
-          />
-        </div>
+        <SearchBox />
 
         <div className="flex shrink-0 items-center gap-2">
-          <CreatePostDialog communities={communities} onCreate={onCreate} />
-          <Avatar size="sm">
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {initials(currentUser)}
-            </AvatarFallback>
-          </Avatar>
+          {currentUser ? (
+            <>
+              <CreatePostDialog communities={communities} onCreate={createPost} />
+
+              <Avatar size="sm">
+                <AvatarFallback
+                  className="bg-primary text-primary-foreground"
+                  title={userLabel(currentUser.username)}
+                >
+                  {initials(currentUser.displayName ?? currentUser.username)}
+                </AvatarFallback>
+              </Avatar>
+
+              <form action={signOut}>
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Sign out"
+                  className="text-muted-foreground"
+                >
+                  <LogOut className="size-4" />
+                </Button>
+              </form>
+            </>
+          ) : (
+            <>
+              {/* nativeButton={false} because these render as anchors, not
+                  <button> — without it Base UI strips button semantics. */}
+              <Button
+                variant="ghost"
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/auth/login" />}
+              >
+                Log in
+              </Button>
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/auth/sign-up" />}
+              >
+                Sign up
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

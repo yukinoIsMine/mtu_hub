@@ -1,45 +1,33 @@
 'use client'
 
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Flame, Home, Plus, Check } from 'lucide-react'
 
 import { CommunityAvatar } from '@/components/community-avatar'
-import { formatCount } from '@/lib/format'
+import { useInteractions } from '@/components/interactions-provider'
+import { communityLabel, formatCount } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Community } from '@/lib/types'
 
-interface LeftSidebarProps {
-  communities: Community[]
-  subscribed: Set<string>
-  activeCommunityId: string | null
-  feedMode: 'home' | 'popular'
-  onSelectFeed: (mode: 'home' | 'popular') => void
-  onSelectCommunity: (id: string) => void
-  onToggleSubscribe: (id: string) => void
-}
+export function LeftSidebar({ communities }: { communities: Community[] }) {
+  const pathname = usePathname()
+  const { canInteract, isSubscribed, toggleSubscribe } = useInteractions()
 
-export function LeftSidebar({
-  communities,
-  subscribed,
-  activeCommunityId,
-  feedMode,
-  onSelectFeed,
-  onSelectCommunity,
-  onToggleSubscribe,
-}: LeftSidebarProps) {
   return (
     <nav className="space-y-4 text-sm" aria-label="Communities">
       <div className="rounded-xl border border-border bg-card p-2">
-        <FeedItem
+        <FeedLink
+          href="/"
           icon={<Home className="size-4" />}
           label="Home"
-          active={feedMode === 'home' && !activeCommunityId}
-          onClick={() => onSelectFeed('home')}
+          active={pathname === '/'}
         />
-        <FeedItem
+        <FeedLink
+          href="/popular"
           icon={<Flame className="size-4" />}
           label="Popular"
-          active={feedMode === 'popular' && !activeCommunityId}
-          onClick={() => onSelectFeed('popular')}
+          active={pathname === '/popular'}
         />
       </div>
 
@@ -49,39 +37,52 @@ export function LeftSidebar({
         </p>
         <ul>
           {communities.map((c) => {
-            const isSub = subscribed.has(c.id)
+            const subscribed = isSubscribed(c.id)
+            const href = `/m/${c.slug}`
+
             return (
               <li key={c.id} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => onSelectCommunity(c.id)}
+                <Link
+                  href={href}
                   className={cn(
                     'flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-secondary',
-                    activeCommunityId === c.id && 'bg-secondary',
+                    pathname === href && 'bg-secondary',
                   )}
                 >
                   <CommunityAvatar community={c} className="size-6 text-xs" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium text-foreground">
-                      {c.slug}
+                      {communityLabel(c.slug)}
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {formatCount(c.members)} members
                     </span>
                   </span>
-                </button>
+                </Link>
+
                 <button
                   type="button"
-                  aria-label={isSub ? `Leave ${c.slug}` : `Join ${c.slug}`}
-                  onClick={() => onToggleSubscribe(c.id)}
+                  aria-label={
+                    subscribed
+                      ? `Leave ${communityLabel(c.slug)}`
+                      : `Join ${communityLabel(c.slug)}`
+                  }
+                  disabled={!canInteract}
+                  title={canInteract ? undefined : 'Sign in to join communities'}
+                  onClick={() => toggleSubscribe(c.id)}
                   className={cn(
                     'flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors',
-                    isSub
+                    !canInteract && 'cursor-not-allowed opacity-50',
+                    subscribed
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border text-muted-foreground hover:bg-secondary',
                   )}
                 >
-                  {isSub ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
+                  {subscribed ? (
+                    <Check className="size-3.5" />
+                  ) : (
+                    <Plus className="size-3.5" />
+                  )}
                 </button>
               </li>
             )
@@ -92,21 +93,21 @@ export function LeftSidebar({
   )
 }
 
-function FeedItem({
+function FeedLink({
+  href,
   icon,
   label,
   active,
-  onClick,
 }: {
+  href: string
   icon: React.ReactNode
   label: string
   active: boolean
-  onClick: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      href={href}
+      aria-current={active ? 'page' : undefined}
       className={cn(
         'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 font-medium transition-colors hover:bg-secondary',
         active ? 'bg-primary/10 text-primary' : 'text-foreground',
@@ -114,6 +115,6 @@ function FeedItem({
     >
       {icon}
       {label}
-    </button>
+    </Link>
   )
 }

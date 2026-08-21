@@ -1,49 +1,62 @@
 'use client'
 
-import { MessageSquare, Share2, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import Link from 'next/link'
+import { Check, MessageSquare, Share2, Sparkles } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { CommunityAvatar } from '@/components/community-avatar'
 import { VoteControl } from '@/components/vote-control'
-import { formatCount, timeAgo } from '@/lib/format'
-import type { Community, Post, VoteState } from '@/lib/types'
+import { useInteractions } from '@/components/interactions-provider'
+import { TimeAgo } from '@/components/time-ago'
+import { communityLabel, formatCount, userLabel } from '@/lib/format'
+import type { Community, Post } from '@/lib/types'
 
 interface PostCardProps {
   post: Post
   community: Community
-  vote: VoteState
-  onVote: (next: VoteState) => void
-  onOpen: () => void
-  onOpenCommunity: () => void
 }
 
-export function PostCard({
-  post,
-  community,
-  vote,
-  onVote,
-  onOpen,
-  onOpenCommunity,
-}: PostCardProps) {
+export function PostCard({ post, community }: PostCardProps) {
+  const { canInteract, postVote, postScore, votePost } = useInteractions()
+  const [copied, setCopied] = useState(false)
+
+  // Share does something now that posts have their own URL.
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/post/${post.id}`,
+      )
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* clipboard blocked (insecure origin or denied permission) */
+    }
+  }
+
   return (
     <article className="group flex gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40">
       <div className="pt-0.5">
-        <VoteControl score={post.score} vote={vote} onVote={onVote} />
+        <VoteControl
+          score={postScore(post.id, post.score)}
+          vote={postVote(post.id)}
+          disabled={!canInteract}
+          onVote={(next) => votePost(post.id, next)}
+        />
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          <button
-            type="button"
-            onClick={onOpenCommunity}
+          <Link
+            href={`/m/${community.slug}`}
             className="flex items-center gap-1.5 font-medium text-foreground hover:underline"
           >
             <CommunityAvatar community={community} className="size-5 text-[0.65rem]" />
-            {community.slug}
-          </button>
+            {communityLabel(community.slug)}
+          </Link>
           <span aria-hidden>·</span>
           <span>
-            Posted by {post.author} · {timeAgo(post.createdAt)}
+            Posted by {userLabel(post.author)} · <TimeAgo at={post.createdAt} />
           </span>
           {post.flair && (
             <Badge variant="outline" className="ml-auto">
@@ -52,38 +65,41 @@ export function PostCard({
           )}
         </div>
 
-        <button type="button" onClick={onOpen} className="mt-1.5 block w-full text-left">
+        <Link href={`/post/${post.id}`} className="mt-1.5 block w-full text-left">
           <h2 className="font-heading text-base font-semibold leading-snug text-balance text-foreground group-hover:text-primary">
             {post.title}
           </h2>
           <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
             {post.body}
           </p>
-        </button>
+        </Link>
 
-        <div className="mt-2.5 flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onOpen}
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <Link
+            href={`/post/${post.id}`}
             className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <MessageSquare className="size-3.5" />
             {formatCount(post.commentCount)} comments
-          </button>
-          <button
-            type="button"
-            onClick={onOpen}
+          </Link>
+          <Link
+            href={`/post/${post.id}`}
             className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
           >
             <Sparkles className="size-3.5" />
             Summarize with AI
-          </button>
+          </Link>
           <button
             type="button"
+            onClick={copyLink}
             className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <Share2 className="size-3.5" />
-            Share
+            {copied ? (
+              <Check className="size-3.5 text-success" />
+            ) : (
+              <Share2 className="size-3.5" />
+            )}
+            {copied ? 'Link copied' : 'Share'}
           </button>
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { communityLabel } from '@/lib/format'
 import type { Community } from '@/lib/types'
 
 interface CreatePostDialogProps {
@@ -28,7 +29,20 @@ interface CreatePostDialogProps {
   trigger?: React.ReactNode
 }
 
-const FLAIRS = ['Discussion', 'Help', 'Resource', 'Project', 'Event', 'Guide']
+// Must stay in sync with the post_flair enum in
+// supabase/migrations/0001_enums_and_profiles.sql. Announcement, Challenge and
+// Study Group exist in the seed data but were previously unselectable here.
+const FLAIRS = [
+  'Discussion',
+  'Help',
+  'Resource',
+  'Project',
+  'Event',
+  'Guide',
+  'Announcement',
+  'Challenge',
+  'Study Group',
+]
 
 export function CreatePostDialog({
   communities,
@@ -87,7 +101,7 @@ export function CreatePostDialog({
             >
               {communities.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.slug} — {c.name}
+                  {communityLabel(c.slug)} — {c.name}
                 </option>
               ))}
             </select>

@@ -37,6 +37,19 @@ export function formatDate(epochMs: number): string {
   })
 }
 
+/**
+ * Communities are stored as a bare slug (`EEE`); the `m/` prefix is
+ * presentation and lives here rather than in the database.
+ */
+export function communityLabel(slug: string): string {
+  return `m/${slug}`
+}
+
+/** Same for profiles: `thiha_dev` is stored, `u/thiha_dev` is displayed. */
+export function userLabel(username: string): string {
+  return `u/${username}`
+}
+
 export function initials(name: string): string {
   const clean = name.replace(/^[um]\//, '')
   const parts = clean.split(/[\s_]+/).filter(Boolean)

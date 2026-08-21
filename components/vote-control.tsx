@@ -10,6 +10,8 @@ interface VoteControlProps {
   score: number
   vote: VoteState
   onVote: (next: VoteState) => void
+  /** False when signed out — voting requires a session under RLS. */
+  disabled?: boolean
   orientation?: 'vertical' | 'horizontal'
   size?: 'sm' | 'md'
 }
@@ -18,11 +20,15 @@ export function VoteControl({
   score,
   vote,
   onVote,
+  disabled = false,
   orientation = 'vertical',
   size = 'md',
 }: VoteControlProps) {
   const iconSize = size === 'sm' ? 'size-4' : 'size-5'
-  const displayScore = score + (vote === 1 ? 1 : vote === -1 ? -1 : 0)
+
+  // `score` is displayed as given. It comes from the database, where the total
+  // already includes this user's own vote, so adjusting it here again would
+  // double-count. The caller applies the delta optimistically when voting.
 
   return (
     <div
@@ -35,9 +41,12 @@ export function VoteControl({
         type="button"
         aria-label="Upvote"
         aria-pressed={vote === 1}
+        disabled={disabled}
+        title={disabled ? 'Sign in to vote' : undefined}
         onClick={() => onVote(vote === 1 ? 0 : 1)}
         className={cn(
-          'flex items-center justify-center rounded-full p-1 transition-colors hover:bg-upvote/15',
+          'flex items-center justify-center rounded-full p-1 transition-colors',
+          disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-upvote/15',
           vote === 1 ? 'text-upvote' : 'text-muted-foreground',
         )}
       >
@@ -51,15 +60,18 @@ export function VoteControl({
           vote === 0 && 'text-foreground',
         )}
       >
-        {formatCount(displayScore)}
+        {formatCount(score)}
       </span>
       <button
         type="button"
         aria-label="Downvote"
         aria-pressed={vote === -1}
+        disabled={disabled}
+        title={disabled ? 'Sign in to vote' : undefined}
         onClick={() => onVote(vote === -1 ? 0 : -1)}
         className={cn(
-          'flex items-center justify-center rounded-full p-1 transition-colors hover:bg-downvote/15',
+          'flex items-center justify-center rounded-full p-1 transition-colors',
+          disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-downvote/15',
           vote === -1 ? 'text-downvote' : 'text-muted-foreground',
         )}
       >
