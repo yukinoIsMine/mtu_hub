@@ -253,7 +253,7 @@ export async function fetchPosts(options: FeedOptions = {}): Promise<Post[]> {
     })
   }
 
-  switch (options.sort ?? 'hot') {
+  switch (options.sort ?? 'new') {
     case 'new':
       query = query.order('created_at', { ascending: false })
       break

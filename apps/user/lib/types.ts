@@ -6,10 +6,11 @@ export type VoteState = 1 | 0 | -1
 /** Feed ordering. Each value maps to a dedicated index on posts. */
 export type Sort = 'hot' | 'new' | 'top'
 
-export const SORTS: Sort[] = ['hot', 'new', 'top']
+/** Default feed sorts lead with Latest, then Top, then Hot. */
+export const SORTS: Sort[] = ['new', 'top', 'hot']
 
 export function parseSort(value: string | undefined): Sort {
-  return SORTS.includes(value as Sort) ? (value as Sort) : 'hot'
+  return SORTS.includes(value as Sort) ? (value as Sort) : 'new'
 }
 
 /** Optional short label on a post (preset suggestions or custom text). */

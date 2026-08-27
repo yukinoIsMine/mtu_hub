@@ -15,7 +15,7 @@ const ICONS: Record<Sort, React.ReactNode> = {
 
 const LABELS: Record<Sort, string> = {
   hot: 'Hot',
-  new: 'New',
+  new: 'Latest',
   top: 'Top',
 }
 
@@ -31,8 +31,8 @@ export function SortBar() {
   function hrefFor(sort: Sort) {
     const params = new URLSearchParams(searchParams.toString())
 
-    // 'hot' is the default, so leave it out and keep URLs clean.
-    if (sort === 'hot') params.delete('sort')
+    // 'new' (Latest) is the default, so leave it out and keep URLs clean.
+    if (sort === 'new') params.delete('sort')
     else params.set('sort', sort)
 
     const queryString = params.toString()
