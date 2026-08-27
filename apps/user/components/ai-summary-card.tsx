@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Sparkles, TriangleAlert } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { RefreshCw, Sparkles, TriangleAlert } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { AiSummary, SummarySource } from '@/lib/ai/types'
 import type { Comment, Post } from '@/lib/types'
 
@@ -16,42 +17,54 @@ interface SummaryResponse {
   summary: AiSummary
   source: SummarySource
   model: string
+  basedOnCommentCount: number
 }
 
 export function AiSummaryCard({ post, comments }: AiSummaryCardProps) {
   const [data, setData] = useState<SummaryResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Keyed on the comment count as well as the post: when the discussion moves,
-  // the cached summary is stale and the route regenerates it.
   const commentCount = comments.length
+  const stale =
+    data != null && data.basedOnCommentCount !== commentCount
 
-  useEffect(() => {
-    let cancelled = false
+  const load = useCallback(
+    async (opts?: { refresh?: boolean; background?: boolean }) => {
+      const refresh = opts?.refresh ?? false
+      const background = opts?.background ?? false
 
-    setLoading(true)
-    setError(null)
+      if (background) setRefreshing(true)
+      else {
+        setLoading(true)
+        setError(null)
+      }
 
-    fetch(`/api/posts/${post.id}/summary`)
-      .then(async (res) => {
+      try {
+        const url = refresh
+          ? `/api/posts/${post.id}/summary?refresh=1`
+          : `/api/posts/${post.id}/summary`
+        const res = await fetch(url)
         if (!res.ok) throw new Error(`Request failed (${res.status})`)
-        return (await res.json()) as SummaryResponse
-      })
-      .then((payload) => {
-        if (!cancelled) setData(payload)
-      })
-      .catch((err: Error) => {
-        if (!cancelled) setError(err.message)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+        const payload = (await res.json()) as SummaryResponse
+        setData(payload)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Request failed')
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    },
+    [post.id],
+  )
 
-    return () => {
-      cancelled = true
-    }
-  }, [post.id, commentCount])
+  // Load once per post. Do not refetch when comments change — that was
+  // regenerating the summary (and flashing “Summarizing…”) on every reply.
+  useEffect(() => {
+    void load()
+  }, [load])
 
   const byModel = data?.source === 'model' || data?.source === 'cache'
 
@@ -82,13 +95,34 @@ export function AiSummaryCard({ post, comments }: AiSummaryCardProps) {
             {commentCount === 1 ? '' : 's'}…
           </p>
         </div>
-      ) : error ? (
+      ) : error && !data ? (
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
           Could not build a summary for this thread. {error}
         </p>
       ) : data ? (
         <div className="space-y-3 text-sm">
+          {stale ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background/70 px-2.5 py-2">
+              <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+                New comments since this summary was written.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={refreshing}
+                onClick={() => void load({ refresh: true, background: true })}
+                className="shrink-0 gap-1.5"
+              >
+                <RefreshCw
+                  className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`}
+                />
+                {refreshing ? 'Updating…' : 'Refresh'}
+              </Button>
+            </div>
+          ) : null}
+
           <p className="leading-relaxed text-foreground">{data.summary.tldr}</p>
 
           <div>

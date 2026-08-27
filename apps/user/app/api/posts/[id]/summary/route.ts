@@ -13,18 +13,20 @@ import { createClient } from '@/lib/supabase/server'
 /**
  * Thread summary, cached in post_summaries.
  *
- *   cached and fresh          → return it, nobody pays
- *   stale/missing + signed in → generate, cache, return
- *   otherwise                 → rule-based fallback, labelled as such
+ *   cached (and not ?refresh=1) → return it, even if comment count grew
+ *   ?refresh=1 + signed in      → regenerate, cache, return
+ *   missing + signed in         → generate, cache, return
+ *   otherwise                   → rule-based fallback, labelled as such
  *
- * Anonymous visitors always get something, but only signed-in users can spend
- * model quota.
+ * Automatic refreshes on every new comment were expensive and flashed the UI;
+ * clients load once and only force a refresh when the user asks.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
+  const forceRefresh = new URL(request.url).searchParams.get('refresh') === '1'
 
   const post = await fetchPostById(id)
   if (!post) {
@@ -39,7 +41,7 @@ export async function GET(
     .eq('post_id', post.id)
     .maybeSingle()
 
-  if (cached && cached.comment_count === post.commentCount) {
+  if (cached && !forceRefresh) {
     return respond(
       {
         tldr: cached.tldr,
@@ -49,6 +51,7 @@ export async function GET(
       },
       'cache',
       cached.model,
+      cached.comment_count,
     )
   }
 
@@ -57,7 +60,12 @@ export async function GET(
 
   if (!profile) {
     // Not signed in: never spend quota, and say plainly what produced this.
-    return respond(heuristicSummary({ post, comments }), 'heuristic', HEURISTIC_MODEL)
+    return respond(
+      heuristicSummary({ post, comments }),
+      'heuristic',
+      HEURISTIC_MODEL,
+      comments.length,
+    )
   }
 
   const communities = await fetchCommunities()
@@ -88,12 +96,17 @@ export async function GET(
     if (error) console.error('[ai] failed to cache summary:', error.message)
   }
 
-  return respond(summary, source, model)
+  return respond(summary, source, model, post.commentCount)
 }
 
-function respond(summary: AiSummary, source: SummarySource, model: string) {
+function respond(
+  summary: AiSummary,
+  source: SummarySource,
+  model: string,
+  basedOnCommentCount: number,
+) {
   return NextResponse.json(
-    { summary, source, model },
+    { summary, source, model, basedOnCommentCount },
     // Personalised (depends on session) and already cached in Postgres.
     { headers: { 'Cache-Control': 'private, no-store' } },
   )
