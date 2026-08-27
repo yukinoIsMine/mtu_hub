@@ -54,7 +54,7 @@ export function AppShell({
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 px-4 py-5 lg:grid-cols-[240px_minmax(0,1fr)_300px]">
         <div className="hidden lg:block">
-          <div className="sticky top-20">
+          <div className="sticky top-20 max-h-[calc(100dvh-5.5rem)] overflow-hidden">
             <LeftSidebar
               communities={communities}
               onCreateForum={() => setCreateForumOpen(true)}

@@ -23,8 +23,11 @@ export function LeftSidebar({
   const { canInteract } = useInteractions()
 
   return (
-    <nav className="space-y-4 text-sm" aria-label="Communities">
-      <div className="rounded-xl border border-border bg-card p-2">
+    <nav
+      className="flex h-full min-h-0 flex-col gap-4 text-sm"
+      aria-label="Communities"
+    >
+      <div className="shrink-0 rounded-xl border border-border bg-card p-2">
         <FeedLink
           href="/"
           icon={<Home className="size-4" />}
@@ -39,11 +42,11 @@ export function LeftSidebar({
         />
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-2">
-        <p className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card p-2">
+        <p className="shrink-0 px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Your Communities
         </p>
-        <ul>
+        <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain">
           {communities.map((c) => {
             const href = `/m/${c.slug}`
 
@@ -78,7 +81,7 @@ export function LeftSidebar({
           })}
         </ul>
         {canInteract && onCreateForum ? (
-          <div className="mt-1 border-t border-border pt-1">
+          <div className="shrink-0 border-t border-border pt-1">
             <CreateForumTrigger onClick={onCreateForum} />
           </div>
         ) : null}
