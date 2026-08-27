@@ -36,7 +36,7 @@ export async function signIn(
     return {
       error:
         error.message === 'Invalid login credentials'
-          ? 'Wrong email or password — or you have not confirmed your email yet.'
+          ? 'Wrong email or password.'
           : error.message,
     }
   }
@@ -63,7 +63,7 @@ export async function signUp(
   const origin = (await headers()).get('origin')
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -75,6 +75,14 @@ export async function signUp(
   })
 
   if (error) return { error: error.message }
+
+  revalidatePath('/', 'layout')
+
+  // Confirm email off → Supabase returns a session; go straight in.
+  // Confirm email on → no session until the link is opened.
+  if (data.session) {
+    redirect('/')
+  }
 
   redirect('/auth/check-email')
 }
