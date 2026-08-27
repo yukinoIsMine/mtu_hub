@@ -53,19 +53,22 @@ export function AppShell({
       )}
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 px-4 py-5 lg:grid-cols-[240px_minmax(0,1fr)_300px]">
-        <div className="hidden lg:block">
-          <div className="sticky top-20 max-h-[calc(100dvh-5.5rem)] overflow-hidden">
+        <aside className="hidden lg:block">
+          {/* Explicit height (not only max-h) so the communities list can scroll
+              inside the sticky column instead of growing with the feed. */}
+          <div className="sticky top-16 flex h-[calc(100dvh-4.5rem)] flex-col overflow-hidden">
             <LeftSidebar
               communities={communities}
               onCreateForum={() => setCreateForumOpen(true)}
+              scrollable
             />
           </div>
-        </div>
+        </aside>
 
         <main className="min-w-0">{children}</main>
 
         <div>
-          <div className="lg:sticky lg:top-20">
+          <div className="lg:sticky lg:top-16 lg:max-h-[calc(100dvh-4.5rem)] lg:overflow-y-auto">
             <RightSidebar
               recommendations={recommendations}
               trending={trending}

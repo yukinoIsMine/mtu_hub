@@ -15,16 +15,22 @@ import type { Community } from '@/lib/types'
 export function LeftSidebar({
   communities,
   onCreateForum,
+  /** Desktop sticky column: communities list scrolls inside the viewport. */
+  scrollable = false,
 }: {
   communities: Community[]
   onCreateForum?: () => void
+  scrollable?: boolean
 }) {
   const pathname = usePathname()
   const { canInteract } = useInteractions()
 
   return (
     <nav
-      className="flex h-full min-h-0 flex-col gap-4 text-sm"
+      className={cn(
+        'flex flex-col gap-4 text-sm',
+        scrollable && 'min-h-0 flex-1',
+      )}
       aria-label="Communities"
     >
       <div className="shrink-0 rounded-xl border border-border bg-card p-2">
@@ -42,11 +48,23 @@ export function LeftSidebar({
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card p-2">
+      <div
+        className={cn(
+          'flex flex-col rounded-xl border border-border bg-card p-2',
+          scrollable && 'min-h-0 flex-1',
+        )}
+      >
         <p className="shrink-0 px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Your Communities
         </p>
-        <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain">
+        <ul
+          className={cn(
+            '-mx-1 space-y-0.5 px-1',
+            scrollable
+              ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain'
+              : undefined,
+          )}
+        >
           {communities.map((c) => {
             const href = `/m/${c.slug}`
 
