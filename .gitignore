@@ -1,20 +1,31 @@
-# v0 sandbox internal files
+# Dependencies
+node_modules
+
+# Next.js
+.next/
+out/
+
+# Turbo
+.turbo/
+
+# Environment variables
+.env*.local
+
+# Vercel / v0
+.vercel/
 __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
 .snowflake/
 .v0-trash/
-.vercel/
 
-# Environment variables
-.env*.local
-
-# Supabase CLI local state — machine-specific, and carries your org identifiers
+# Supabase CLI local state
 supabase/.temp/
 supabase/.branches/
+**/supabase/.temp/
+**/supabase/.branches/
 
-# Common ignores
-node_modules
-.next/
+# Misc
 .DS_Store
-tsconfig.tsbuildinfo
+*.tsbuildinfo
+dist/

@@ -1,0 +1,27 @@
+{
+  "name": "@mtu/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./database.types": "./src/database.types.ts",
+    "./env": "./src/env.ts",
+    "./browser": "./src/browser.ts",
+    "./server": "./src/server.ts",
+    "./admin": "./src/admin.ts"
+  },
+  "scripts": {
+    "lint": "echo \"no lint\""
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3"
+  },
+  "peerDependencies": {
+    "next": ">=15"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}
