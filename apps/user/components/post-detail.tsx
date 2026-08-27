@@ -16,15 +16,22 @@ import { useInteractions } from '@/components/interactions-provider'
 import { TimeAgo } from '@/components/time-ago'
 import { assertValidPostImage } from '@/lib/browser-mutations'
 import { communityLabel, formatCount, userLabel } from '@/lib/format'
+import type { PostSummaryPayload } from '@/lib/ai/types'
 import type { Comment, Community, Post } from '@/lib/types'
 
 interface PostDetailProps {
   post: Post
   community: Community
   comments: Comment[]
+  initialSummary?: PostSummaryPayload | null
 }
 
-export function PostDetail({ post, community, comments }: PostDetailProps) {
+export function PostDetail({
+  post,
+  community,
+  comments,
+  initialSummary = null,
+}: PostDetailProps) {
   const {
     currentUser,
     canInteract,
@@ -237,7 +244,12 @@ export function PostDetail({ post, community, comments }: PostDetailProps) {
         </div>
       </div>
 
-      <AiSummaryCard post={post} comments={comments} />
+      <AiSummaryCard
+        key={post.id}
+        post={post}
+        comments={comments}
+        initialSummary={initialSummary}
+      />
 
       <div className="rounded-xl border border-border bg-card p-4">
         <h2 className="font-heading text-sm font-semibold text-foreground">

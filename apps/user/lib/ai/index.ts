@@ -2,7 +2,7 @@ import { geminiConfigured, geminiSummary, GEMINI_MODEL } from './gemini'
 import { heuristicSummary } from './heuristic'
 import type { AiSummary, SummaryInput } from './types'
 
-export type { AiSummary, Sentiment, SummaryInput, SummarySource } from './types'
+export type { AiSummary, Sentiment, SummaryInput, SummarySource, PostSummaryPayload } from './types'
 export { heuristicSummary } from './heuristic'
 export { GEMINI_MODEL } from './gemini'
 

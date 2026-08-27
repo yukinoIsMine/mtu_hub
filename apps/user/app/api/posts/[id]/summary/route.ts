@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 
 import { generateSummary, heuristicSummary, HEURISTIC_MODEL } from '@/lib/ai'
-import type { AiSummary, SummarySource } from '@/lib/ai/types'
+import type { AiSummary, PostSummaryPayload, SummarySource } from '@/lib/ai/types'
 import {
+  fetchCachedPostSummary,
   fetchCommunities,
   fetchCurrentProfile,
   fetchPostById,
@@ -13,13 +14,10 @@ import { createClient } from '@/lib/supabase/server'
 /**
  * Thread summary, cached in post_summaries.
  *
- *   cached (and not ?refresh=1) → return it, even if comment count grew
+ *   cached (and not ?refresh=1) → return it (no regenerate on re-entry)
  *   ?refresh=1 + signed in      → regenerate, cache, return
  *   missing + signed in         → generate, cache, return
  *   otherwise                   → rule-based fallback, labelled as such
- *
- * Automatic refreshes on every new comment were expensive and flashed the UI;
- * clients load once and only force a refresh when the user asks.
  */
 export async function GET(
   request: Request,
@@ -33,33 +31,19 @@ export async function GET(
     return NextResponse.json({ error: 'Post not found' }, { status: 404 })
   }
 
-  const supabase = await createClient()
-
-  const { data: cached } = await supabase
-    .from('post_summaries')
-    .select('comment_count, tldr, key_points, consensus, sentiment, model')
-    .eq('post_id', post.id)
-    .maybeSingle()
-
-  if (cached && !forceRefresh) {
-    return respond(
-      {
-        tldr: cached.tldr,
-        keyPoints: cached.key_points,
-        consensus: cached.consensus,
-        sentiment: cached.sentiment as AiSummary['sentiment'],
-      },
-      'cache',
-      cached.model,
-      cached.comment_count,
-    )
+  if (!forceRefresh) {
+    const cached = await fetchCachedPostSummary(post.id)
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': 'private, no-store' },
+      })
+    }
   }
 
   const comments = await fetchPostComments(post.id)
   const profile = await fetchCurrentProfile()
 
   if (!profile) {
-    // Not signed in: never spend quota, and say plainly what produced this.
     return respond(
       heuristicSummary({ post, comments }),
       'heuristic',
@@ -78,6 +62,7 @@ export async function GET(
   })
 
   if (source === 'model') {
+    const supabase = await createClient()
     const { error } = await supabase.from('post_summaries').upsert(
       {
         post_id: post.id,
@@ -91,8 +76,6 @@ export async function GET(
       { onConflict: 'post_id' },
     )
 
-    // A cache write failure is not worth failing the request over — the reader
-    // still gets their summary, it just costs quota again next time.
     if (error) console.error('[ai] failed to cache summary:', error.message)
   }
 
@@ -105,9 +88,13 @@ function respond(
   model: string,
   basedOnCommentCount: number,
 ) {
-  return NextResponse.json(
-    { summary, source, model, basedOnCommentCount },
-    // Personalised (depends on session) and already cached in Postgres.
-    { headers: { 'Cache-Control': 'private, no-store' } },
-  )
+  const payload: PostSummaryPayload = {
+    summary,
+    source,
+    model,
+    basedOnCommentCount,
+  }
+  return NextResponse.json(payload, {
+    headers: { 'Cache-Control': 'private, no-store' },
+  })
 }

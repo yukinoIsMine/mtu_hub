@@ -29,6 +29,14 @@ export interface SummaryInput {
  */
 export type SummarySource = 'cache' | 'model' | 'heuristic'
 
+/** Payload shape shared by the summary API and SSR initial data. */
+export interface PostSummaryPayload {
+  summary: AiSummary
+  source: SummarySource
+  model: string
+  basedOnCommentCount: number
+}
+
 export function isAiSummary(value: unknown): value is AiSummary {
   if (!value || typeof value !== 'object') return false
 

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 
 import { PostDetail } from '@/components/post-detail'
 import {
+  fetchCachedPostSummary,
   fetchCommunities,
   fetchPostById,
   fetchPostComments,
@@ -34,14 +35,23 @@ export default async function PostPage({
   if (!post) notFound()
 
   // Comments are server-rendered, so a shared thread link needs no round trip
-  // and the discussion is visible to crawlers.
-  const [communities, comments] = await Promise.all([
+  // and the discussion is visible to crawlers. Summary cache is loaded here so
+  // re-entering a post does not regenerate or flash “Summarizing…”.
+  const [communities, comments, initialSummary] = await Promise.all([
     fetchCommunities(),
     fetchPostComments(post.id),
+    fetchCachedPostSummary(post.id),
   ])
 
   const community = communities.find((c) => c.id === post.communityId)
   if (!community) notFound()
 
-  return <PostDetail post={post} community={community} comments={comments} />
+  return (
+    <PostDetail
+      post={post}
+      community={community}
+      comments={comments}
+      initialSummary={initialSummary}
+    />
+  )
 }

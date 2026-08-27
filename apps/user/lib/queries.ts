@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { toComment, toCommunity, toNotification, toPost } from '@/lib/mappers'
 import { COMMENT_SELECT, COMMUNITY_SELECT, POST_SELECT } from '@/lib/selects'
+import type { AiSummary, PostSummaryPayload } from '@/lib/ai/types'
 import type {
   Comment,
   Community,
@@ -405,4 +406,32 @@ export async function fetchForumAdminProfileIds(
       username: profile?.username ?? 'unknown',
     }
   })
+}
+
+/** Cached AI summary for a post, or null if none has been generated yet. */
+export async function fetchCachedPostSummary(
+  postId: string,
+): Promise<PostSummaryPayload | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('post_summaries')
+    .select('comment_count, tldr, key_points, consensus, sentiment, model')
+    .eq('post_id', postId)
+    .maybeSingle()
+
+  if (error) throw new Error(`Failed to load post summary: ${error.message}`)
+  if (!data) return null
+
+  return {
+    summary: {
+      tldr: data.tldr,
+      keyPoints: data.key_points,
+      consensus: data.consensus,
+      sentiment: data.sentiment as AiSummary['sentiment'],
+    },
+    source: 'cache',
+    model: data.model,
+    basedOnCommentCount: data.comment_count,
+  }
 }
