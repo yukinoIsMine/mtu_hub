@@ -52,7 +52,7 @@ interface InteractionsValue {
 
   votePost: (postId: string, next: VoteState) => void
   voteComment: (commentId: string, next: VoteState) => void
-  toggleSubscribe: (communityId: string) => void
+  toggleSubscribe: (communityId: string) => Promise<void>
   createPost: (data: {
     communityId: string
     title: string

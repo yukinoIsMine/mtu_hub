@@ -4,14 +4,13 @@ import Link from 'next/link'
 import {
   ArrowLeft,
   CalendarDays,
-  Check,
-  Plus,
   Settings,
   Shield,
   Users,
 } from 'lucide-react'
 
 import { useInteractions } from '@/components/interactions-provider'
+import { JoinLeaveButton } from '@/components/join-leave-button'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,9 +32,7 @@ export function CommunityDetail({
   postCount,
   children,
 }: CommunityDetailProps) {
-  const { canInteract, isSubscribed, isForumAdmin, toggleSubscribe } =
-    useInteractions()
-  const subscribed = isSubscribed(community.id)
+  const { isForumAdmin } = useInteractions()
   const canManage = isForumAdmin(community.id)
 
   return (
@@ -78,31 +75,12 @@ export function CommunityDetail({
                 Manage forum
               </Button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => toggleSubscribe(community.id)}
-              disabled={!canInteract}
-              title={canInteract ? undefined : 'Sign in to join communities'}
-              className={cn(
-                'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
-                !canInteract && 'cursor-not-allowed opacity-50',
-                subscribed
-                  ? 'border border-primary bg-primary/10 text-primary hover:bg-primary/20'
-                  : 'bg-primary text-primary-foreground hover:opacity-90',
-              )}
-            >
-              {subscribed ? (
-                <>
-                  <Check className="size-4" />
-                  Joined
-                </>
-              ) : (
-                <>
-                  <Plus className="size-4" />
-                  Join
-                </>
-              )}
-            </button>
+            <JoinLeaveButton
+              communityId={community.id}
+              slug={community.slug}
+              name={community.name}
+              variant="pill"
+            />
           </div>
         </div>
       </div>

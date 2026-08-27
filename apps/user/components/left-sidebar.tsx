@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Flame, Home, Plus, Check } from 'lucide-react'
+import { Flame, Home } from 'lucide-react'
 
 import { CommunityAvatar } from '@/components/community-avatar'
 import { CreateForumTrigger } from '@/components/create-community-dialog'
+import { JoinLeaveButton } from '@/components/join-leave-button'
 import { useInteractions } from '@/components/interactions-provider'
 import { communityLabel, formatCount } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -19,7 +20,7 @@ export function LeftSidebar({
   onCreateForum?: () => void
 }) {
   const pathname = usePathname()
-  const { canInteract, isSubscribed, toggleSubscribe } = useInteractions()
+  const { canInteract } = useInteractions()
 
   return (
     <nav className="space-y-4 text-sm" aria-label="Communities">
@@ -44,7 +45,6 @@ export function LeftSidebar({
         </p>
         <ul>
           {communities.map((c) => {
-            const subscribed = isSubscribed(c.id)
             const href = `/m/${c.slug}`
 
             return (
@@ -67,30 +67,12 @@ export function LeftSidebar({
                   </span>
                 </Link>
 
-                <button
-                  type="button"
-                  aria-label={
-                    subscribed
-                      ? `Leave ${communityLabel(c.slug)}`
-                      : `Join ${communityLabel(c.slug)}`
-                  }
-                  disabled={!canInteract}
-                  title={canInteract ? undefined : 'Sign in to join communities'}
-                  onClick={() => toggleSubscribe(c.id)}
-                  className={cn(
-                    'flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors',
-                    !canInteract && 'cursor-not-allowed opacity-50',
-                    subscribed
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border text-muted-foreground hover:bg-secondary',
-                  )}
-                >
-                  {subscribed ? (
-                    <Check className="size-3.5" />
-                  ) : (
-                    <Plus className="size-3.5" />
-                  )}
-                </button>
+                <JoinLeaveButton
+                  communityId={c.id}
+                  slug={c.slug}
+                  name={c.name}
+                  variant="icon"
+                />
               </li>
             )
           })}
